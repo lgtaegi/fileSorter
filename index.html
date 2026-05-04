@@ -1,0 +1,415 @@
+<!--
+  fileSorter
+  Created: 2026-05-04
+  Created by lgtaegi
+-->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>File Sorter Toolbox</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="shell">
+    <header class="hero">
+      <div class="hero-copy">
+        <p class="hero-kicker">Local file operations</p>
+        <h1>File Sorter Toolbox</h1>
+        <p class="hero-lede">A calmer desktop workflow for sorting, comparing, cleaning, and recovering file changes.</p>
+      </div>
+      <div class="hero-side">
+        <div class="hero-stat">
+          <span>Current source</span>
+          <strong id="currentSourceName">Not selected</strong>
+        </div>
+        <div class="hero-stat">
+          <span>Undo logs</span>
+          <strong id="undoLogCount">0</strong>
+        </div>
+      </div>
+    </header>
+
+    <nav class="primary-tabs" aria-label="App sections">
+      <button class="primary-tab active" type="button" data-tab="sorter">Sorter</button>
+      <button class="primary-tab" type="button" data-tab="utilities">Utilities</button>
+    </nav>
+
+    <main class="workspace">
+      <aside class="sidebar">
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <h2>Source folder</h2>
+              <p>Shared across tools unless a utility overrides it.</p>
+            </div>
+            <button id="browseSourceBtn" class="ghost-button" type="button">Browse</button>
+          </div>
+
+          <div class="field-row">
+            <input id="sourcePath" class="path-input" type="text" placeholder="/Users/you/Documents/Folder" autocomplete="off" spellcheck="false" />
+            <button id="loadSourceBtn" type="button">Load</button>
+          </div>
+
+          <div class="stat-grid">
+            <div class="mini-stat"><span>Items</span><strong id="sourceItems">-</strong></div>
+            <div class="mini-stat"><span>Files</span><strong id="sourceFiles">-</strong></div>
+            <div class="mini-stat"><span>Folders</span><strong id="sourceFolders">-</strong></div>
+            <div class="mini-stat"><span>Sortable</span><strong id="sourceSortable">-</strong></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <h2>Diagnostics</h2>
+              <p>Use this when Finder counts and sortable counts diverge.</p>
+            </div>
+            <button id="diagnoseSourceBtn" class="ghost-button" type="button">Run</button>
+          </div>
+          <div id="sourceDiagnostics" class="log-list compact-list"></div>
+        </section>
+      </aside>
+
+      <section class="main-stage">
+        <section class="tab-panel active" data-panel="sorter">
+          <div class="section-head">
+            <div>
+              <p class="section-kicker">Sorting workspace</p>
+              <h2>Sorter</h2>
+              <p>Organize files with smart categories, previews, and a size rule that doubles as a large-file filter.</p>
+            </div>
+          </div>
+
+          <div class="tool-grid">
+            <section class="card">
+              <div class="card-header">
+                <div>
+                  <h3>Sort settings</h3>
+                  <p>Build the folder path in the order you want.</p>
+                </div>
+                <button id="sortUndoBtn" class="ghost-button compact-button" type="button">Undo last sort</button>
+              </div>
+
+              <label class="field">
+                <span>Destination folder</span>
+                <div class="field-row">
+                  <input id="destPath" class="path-input" type="text" placeholder="Leave blank to sort inside the source folder" autocomplete="off" spellcheck="false" />
+                  <button id="browseDestBtn" class="ghost-button" type="button">Browse</button>
+                </div>
+              </label>
+
+              <div class="field">
+                <span>Create folders by</span>
+                <div class="chip-grid">
+                  <label class="chip"><input type="checkbox" name="sortGroup" value="year" checked><span>Year</span></label>
+                  <label class="chip"><input type="checkbox" name="sortGroup" value="month" checked><span>Month</span></label>
+                  <label class="chip"><input type="checkbox" name="sortGroup" value="day"><span>Day</span></label>
+                  <label class="chip"><input type="checkbox" name="sortGroup" value="type" checked><span>Exact extension</span></label>
+                  <label class="chip"><input type="checkbox" name="sortGroup" value="category"><span>Category</span></label>
+                </div>
+              </div>
+
+              <div class="size-rule-box">
+                <label><input id="sortSizeRuleEnabled" type="checkbox"> Use size rule</label>
+                <div class="size-rule-row">
+                  <select id="sortSizeComparator">
+                    <option value="at_least">Files at least</option>
+                    <option value="at_most">Files at most</option>
+                  </select>
+                  <input id="sortSizeValue" type="number" min="0" step="1" value="500" />
+                  <select id="sortSizeUnit">
+                    <option value="MB">MB</option>
+                    <option value="GB">GB</option>
+                    <option value="KB">KB</option>
+                    <option value="B">Bytes</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="toggle-stack">
+                <label><input id="includeSubfolders" type="checkbox" checked> Include files inside folders</label>
+                <label><input id="copyInsteadOfMove" type="checkbox"> Copy instead of move</label>
+                <label><input id="sortPreviewOnly" type="checkbox" checked> Preview before applying changes</label>
+              </div>
+
+              <button id="sortBtn" class="primary-button" type="button" disabled>Preview sorting</button>
+            </section>
+
+            <section class="card">
+              <div class="card-header">
+                <div>
+                  <h3>Sorting preview</h3>
+                  <p>See each planned move before you commit.</p>
+                </div>
+              </div>
+              <div id="sortPreviewList" class="log-list preview-list"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="tab-panel" data-panel="utilities">
+          <div class="section-head">
+            <div>
+              <p class="section-kicker">Utilities</p>
+              <h2>Cleanup and comparison tools</h2>
+              <p>Every utility is grouped into a pull-down section so the workspace stays clear and easy to scan.</p>
+            </div>
+          </div>
+
+          <section class="card utility-source-card">
+            <div class="card-header">
+              <div>
+                <h3>Utility folder</h3>
+                <p>Defaults to the shared source folder, but you can override it here.</p>
+              </div>
+              <button id="browseUtilityBtn" class="ghost-button" type="button">Browse</button>
+            </div>
+            <div class="field-row">
+              <input id="utilityPath" class="path-input" type="text" autocomplete="off" spellcheck="false" />
+              <button id="loadUtilityBtn" type="button">Load</button>
+            </div>
+          </section>
+
+          <div class="utility-accordion">
+            <details class="accordion-card" open>
+              <summary>
+                <div>
+                  <h3>Global undo</h3>
+                  <p>Undo the latest run or any specific logged run from anywhere in the toolbox.</p>
+                </div>
+              </summary>
+              <div class="accordion-body">
+                <div class="action-row">
+                  <button id="undoLatestBtn" class="warning-button" type="button">Undo latest run</button>
+                  <button id="refreshLogsBtn" class="ghost-button" type="button">Refresh logs</button>
+                </div>
+                <div id="undoLogList" class="log-list preview-list"></div>
+              </div>
+            </details>
+
+            <details class="accordion-card" open>
+              <summary>
+                <div>
+                  <h3>Comparer</h3>
+                  <p>Preview the gap between two folders, then decide which side becomes the truth.</p>
+                </div>
+              </summary>
+              <div class="accordion-body">
+                <div class="field-stack">
+                  <label class="field">
+                    <span>Folder A</span>
+                    <div class="field-row">
+                      <input id="compareFolderA" class="path-input" type="text" autocomplete="off" spellcheck="false" />
+                      <button id="browseCompareABtn" class="ghost-button" type="button">Browse</button>
+                    </div>
+                  </label>
+
+                  <label class="field">
+                    <span>Folder B</span>
+                    <div class="field-row">
+                      <input id="compareFolderB" class="path-input" type="text" autocomplete="off" spellcheck="false" />
+                      <button id="browseCompareBBtn" class="ghost-button" type="button">Browse</button>
+                    </div>
+                  </label>
+
+                  <div class="option-grid">
+                    <label class="field">
+                      <span>Match files by</span>
+                      <select id="compareMatchBy">
+                        <option value="path_size">Same folder path and file size</option>
+                        <option value="name_size">Same file name and file size</option>
+                      </select>
+                    </label>
+
+                    <label class="field">
+                      <span>Make target match</span>
+                      <select id="compareDirection">
+                        <option value="a_to_b">Make Folder B match Folder A</option>
+                        <option value="b_to_a">Make Folder A match Folder B</option>
+                      </select>
+                    </label>
+                  </div>
+
+                  <div class="toggle-stack">
+                    <label><input id="compareVerifyContents" type="checkbox"> Verify file contents</label>
+                    <label><input id="compareReplaceDifferent" type="checkbox" checked> Replace different files in the target</label>
+                    <label><input id="compareDeleteTargetOnly" type="checkbox"> Delete files that exist only in the target</label>
+                    <label><input id="compareProtectedMode" type="checkbox" checked> Protected mode: preview required before real run</label>
+                    <label><input id="comparePreviewOnly" type="checkbox" checked> Preview only</label>
+                  </div>
+
+                  <div class="action-row">
+                    <button id="runCompareBtn" class="primary-button" type="button">Preview compare actions</button>
+                    <button id="applyCompareBtn" class="warning-button" type="button" disabled>Run compare actions</button>
+                    <button id="compareUndoBtn" class="ghost-button compact-button" type="button">Undo last compare</button>
+                  </div>
+                </div>
+
+                <div class="card inset-card">
+                  <div class="card-header tight">
+                    <div>
+                      <h4>Before / after preview</h4>
+                      <p>Action plan before copy, replace, or delete happens.</p>
+                    </div>
+                  </div>
+                  <div id="compareActionPreview" class="log-list preview-list"></div>
+                </div>
+
+                <div class="three-column-results">
+                  <section class="result-column">
+                    <div class="result-header">
+                      <h4>Only in Folder A</h4>
+                      <p id="onlyInACount">0 files</p>
+                    </div>
+                    <div id="onlyInAList" class="result-list"></div>
+                  </section>
+
+                  <section class="result-column">
+                    <div class="result-header">
+                      <h4>Different</h4>
+                      <p id="differentCount">0 files</p>
+                    </div>
+                    <div id="differentList" class="result-list"></div>
+                  </section>
+
+                  <section class="result-column">
+                    <div class="result-header">
+                      <h4>Only in Folder B</h4>
+                      <p id="onlyInBCount">0 files</p>
+                    </div>
+                    <div id="onlyInBList" class="result-list"></div>
+                  </section>
+                </div>
+              </div>
+            </details>
+
+            <details class="accordion-card">
+              <summary>
+                <div>
+                  <h3>File name cleaner</h3>
+                  <p>Normalize names before sorting or deduping.</p>
+                </div>
+              </summary>
+              <div class="accordion-body">
+                <div class="toggle-stack">
+                  <label><input id="renameTrimWhitespace" type="checkbox" checked> Trim leading and trailing whitespace</label>
+                  <label><input id="renameReplaceSpaces" type="checkbox" checked> Replace spaces with underscores</label>
+                  <label><input id="renameRemoveSpecial" type="checkbox"> Remove special characters</label>
+                  <label><input id="renameAddDatePrefix" type="checkbox"> Add today's date as prefix</label>
+                  <label><input id="renameSequence" type="checkbox"> Add sequence numbers</label>
+                </div>
+                <div class="action-row">
+                  <button id="previewRenameBtn" class="primary-button" type="button">Preview renaming</button>
+                  <button id="applyRenameBtn" class="ghost-button" type="button">Apply renaming</button>
+                  <button id="renameUndoBtn" class="ghost-button compact-button" type="button">Undo last rename</button>
+                </div>
+                <div id="renamePreviewList" class="log-list preview-list"></div>
+              </div>
+            </details>
+
+            <details class="accordion-card">
+              <summary>
+                <div>
+                  <h3>Duplicate finder</h3>
+                  <p>Find duplicates, then keep the right original.</p>
+                </div>
+              </summary>
+              <div class="accordion-body">
+                <div class="option-grid">
+                  <label class="field">
+                    <span>Find duplicates by</span>
+                    <select id="duplicateMode">
+                      <option value="hash">File contents hash</option>
+                      <option value="name">File name</option>
+                      <option value="size">File size</option>
+                    </select>
+                  </label>
+
+                  <label class="field">
+                    <span>Keep rule</span>
+                    <select id="duplicateKeepRule">
+                      <option value="earliest">Keep the earliest created file</option>
+                      <option value="latest">Keep the latest created file</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="toggle-stack">
+                  <label><input id="duplicateDeleteMode" type="checkbox"> Delete duplicates and keep one file per group</label>
+                </div>
+                <div class="action-row">
+                  <button id="findDuplicatesBtn" class="primary-button" type="button">Find duplicates</button>
+                  <button id="duplicateUndoBtn" class="ghost-button compact-button" type="button">Undo last duplicate cleanup</button>
+                </div>
+                <div id="duplicateResults" class="log-list preview-list"></div>
+              </div>
+            </details>
+
+            <details class="accordion-card">
+              <summary>
+                <div>
+                  <h3>Empty folder cleaner</h3>
+                  <p>Preview empty folders, then remove them cleanly.</p>
+                </div>
+              </summary>
+              <div class="accordion-body">
+                <div class="toggle-stack">
+                  <label><input id="emptyFolderPreviewOnly" type="checkbox" checked> Preview before deleting</label>
+                </div>
+                <div class="action-row">
+                  <button id="runEmptyFolderBtn" class="primary-button" type="button">Find empty folders</button>
+                  <button id="emptyUndoBtn" class="ghost-button compact-button" type="button">Undo last empty-folder cleanup</button>
+                </div>
+                <div id="emptyFolderResults" class="log-list preview-list"></div>
+              </div>
+            </details>
+
+            <details class="accordion-card">
+              <summary>
+                <div>
+                  <h3>Move files out of folders</h3>
+                  <p>Flatten nested folders after review.</p>
+                </div>
+              </summary>
+              <div class="accordion-body">
+                <div class="toggle-stack">
+                  <label><input id="dryRunUtility" type="checkbox" checked> Preview before moving files</label>
+                  <label><input id="deleteEmptyFolders" type="checkbox" checked> Delete empty folders after moving files out</label>
+                </div>
+                <div class="action-row">
+                  <button id="flattenBtn" class="primary-button" type="button">Preview moving files out</button>
+                  <button id="flattenUndoBtn" class="ghost-button compact-button" type="button">Undo last flatten</button>
+                </div>
+                <div id="utilityLog" class="log-list preview-list"></div>
+              </div>
+            </details>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <div id="pickerModal" class="modal hidden" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="pickerTitle">
+      <div class="card-header">
+        <div>
+          <h3 id="pickerTitle">Select a folder</h3>
+          <p id="pickerPath">-</p>
+        </div>
+        <button id="closePickerBtn" class="ghost-button" type="button">Close</button>
+      </div>
+      <div class="action-row">
+        <button id="pickerParentBtn" class="ghost-button" type="button">Up one level</button>
+        <button id="pickerUseBtn" class="primary-button" type="button">Use this folder</button>
+      </div>
+      <div id="pickerRoots" class="root-strip"></div>
+      <div id="pickerStats" class="stat-grid compact-grid"></div>
+      <div id="pickerList" class="picker-list"></div>
+    </div>
+  </div>
+
+  <script defer src="/shared.js"></script>
+  <script defer src="/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+# fileSorter
+# Created: 2026-05-04
+# Created by lgtaegi
+
+.DS_Store
+
+node_modules/
+
+file-sorter.log
+
+undo-logs/
+undo-backups/
+
+backups/
+released/
